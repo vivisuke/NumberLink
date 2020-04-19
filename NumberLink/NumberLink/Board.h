@@ -40,6 +40,7 @@ public:
 	std::string	text0() const;
 	std::string	text() const;
 	std::string	text2() const;
+	std::string	text3() const;
 	std::string	textLink2() const;
 	bool	isConsecutive() const;		//	問題に数字が連続して並んでいるか？
 	bool	doesIncludeMeaninglessLink() const;			//	コの字型のパスを含むか？

@@ -5,6 +5,8 @@
 
 using namespace std;
 
+typedef const char cchar;
+
 random_device g_rnd;
 mt19937 g_mt(g_rnd());
 
@@ -79,6 +81,7 @@ std::string Board::text() const
 			txt += '\n';
 		}
 	}
+	txt += '\n';
 	return txt;
 }
 std::string Board::text2() const
@@ -106,6 +109,38 @@ std::string Board::text2() const
 					txt += "  ";
 			}
 			txt += '\n';
+		}
+	}
+	txt += '\n';
+	return txt;
+}
+std::string Board::text3() const
+{
+	static cchar *dig[] = {"０", "１", "２", "３", "４", "５", "６", "７", "８", "９",};
+	string txt;
+	txt += "┏━";
+	for (int x = 1; x < m_nHorz; ++x) txt += "┳━";
+	txt += "┓\n";
+	int ix = 0;
+	for (int y = 0; y < m_nVert; ++y) {
+		for (int x = 0; x < m_nHorz; ++x, ++ix) {
+			txt += "┃";
+			if( m_number[ix] ) {
+				txt += dig[m_number[ix]];
+				//txt += '0' + m_number[ix];
+			} else {
+				txt += "・";
+			}
+		}
+		txt += "┃\n";
+		if( y != m_nVert - 1 ) {
+			txt += "┣━";
+			for (int x = 1; x < m_nHorz; ++x) txt += "╋━";
+			txt += "┫\n";
+		} else {
+			txt += "┗━";
+			for (int x = 1; x < m_nHorz; ++x) txt += "┻━";
+			txt += "┛\n";
 		}
 	}
 	return txt;

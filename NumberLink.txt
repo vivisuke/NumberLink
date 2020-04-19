@@ -1,0 +1,20 @@
+
+‚P  ‚Q  ‚R  ‚P
+b  b  b  b
+E  E  E  E
+b  b  b  b
+E  ‚Q  ‚R  E
+b          b
+E|E|E|E
+
+
+„¬„ª„±„ª„±„ª„±„ª„­
+„«‚P„«‚Q„«‚R„«‚P„«
+„°„ª„´„ª„´„ª„´„ª„²
+„«b„«b„«b„«b„«
+„°„ª„´„ª„´„ª„´„ª„²
+„«b„«‚Q„«‚R„«b„«
+„°„ª„´„ª„´„ª„´„ª„²
+„«„¤„«|„«|„«„£„«
+„¯„ª„³„ª„³„ª„³„ª„®
+
