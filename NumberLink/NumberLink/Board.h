@@ -54,9 +54,11 @@ public:
 	
 	bool	doSolve();
 	bool	doSolve(int ix, int x, int y);		//	ix の状態を決める
-	bool	doSolve2();
-	bool	doSolve2(int ix, int x, int y);		//	ix の状態を決める
+	bool	doSolveBT();						//	バックトラッキング探索
+	bool	doSolveBT(int ix, int x, int y);		//	ix の状態を決める
 	bool	checkLink();						//	出来上がったリンクが正しいかどうかをチェック
+	bool	checkLink(int ix);					//	ix からのリンクが正しいかどうかをチェック
+	int		findNumber(int ix, uchar dir);
 	bool	isUniq();							//	解がユニーク？
 	void	isUniq(int ix, int x, int y);		//	ix の状態を決める
 	void	setRandom(int N);
@@ -73,4 +75,5 @@ private:
 	std::vector<uchar>	m_work;		//	作業領域
 	std::vector<uchar>	m_link;		//	LINK_XXX の組み合わせ
 	std::vector<uchar>	m_link2;	//	LINK_XXX の組み合わせ
+	std::vector<uchar>	m_linkNum;	//	各リンクの数字、0 for 未定
 };
