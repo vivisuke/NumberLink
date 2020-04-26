@@ -33,7 +33,10 @@ void Board::setNumber(cchar *ptr)
 		char ch = *ptr++;
 		if( isdigit(ch) ) {
 			x = ch - '0';
-		//	undone: 'A'～、'a'～ for 10以上
+		} else if( ch >= 'A' && ch <= 'Z' ) {
+			x = ch - 'A' + 10;
+		} else if( ch >= 'a' && ch <= 'z' ) {
+			x = ch - 'a' + 10;
 		} else
 			x = 0;
 	}
@@ -71,9 +74,12 @@ std::string Board::text() const
 	int ix = 0;
 	for (int y = 0; y < m_nVert; ++y) {
 		for (int x = 0; x < m_nHorz; ++x, ++ix) {
-			if( m_number[ix] )
-				txt += '0' + m_number[ix];
-			else
+			if( m_number[ix] ) {
+				if( m_number[ix] < 10 ) 
+					txt += '0' + m_number[ix];
+				else
+					txt += 'A' + (m_number[ix] - 10);
+			} else
 				txt += '.';
 			txt += ' ';
 		}
@@ -91,9 +97,12 @@ std::string Board::text2() const
 	int ix = 0;
 	for (int y = 0; y < m_nVert; ++y) {
 		for (int x = 0; x < m_nHorz; ++x, ++ix) {
-			if( m_number[ix] )
-				txt += '0' + m_number[ix];
-			else
+			if( m_number[ix] ) {
+				if( m_number[ix] < 10 ) 
+					txt += '0' + m_number[ix];
+				else
+					txt += 'A' + (m_number[ix] - 10);
+			} else
 				txt += '.';
 			if( m_link[ix] & LINK_RIGHT )
 				txt += '-';
@@ -117,7 +126,7 @@ std::string Board::text2() const
 }
 std::string Board::text3() const
 {
-	static cchar *dig[] = {"０", "１", "２", "３", "４", "５", "６", "７", "８", "９",};
+	static cchar *dig[] = {"０", "１", "２", "３", "４", "５", "６", "７", "８", "９","Ａ","Ｂ","Ｃ","Ｄ","Ｅ","Ｆ",};
 	string txt;
 	txt += "┏━";
 	for (int x = 1; x < m_nHorz; ++x) txt += "┳━";
@@ -150,7 +159,7 @@ std::string Board::text3() const
 					txt += "┌";
 					break;
 				default:
-					txt += "　";
+					txt += "  ";
 					break;
 				}
 			}
@@ -197,6 +206,134 @@ std::string Board::textLink2() const
 	}
 	return txt;
 }
+bool Board::isUniqBT()							//	バックトラッキング探索で解がユニークかどうかを調べる
+{
+	m_nSolved = 0;
+	m_work.resize(m_number.size());
+	for(auto &x : m_link) x = 0;
+	isUniqBT(0, 0, 0);
+	return m_nSolved == 1;
+}
+void Board::isUniqBT(int ix, int x, int y)		//	ix の状態を決める
+{
+	//cout << "ix = " << ix << ", x = " << x << ", y = " << y << "\n";
+	//cout << text2() << "\n";
+	if( ix == m_link.size() ) {
+		//cout << text2() << "\n";
+		if( checkLink() )
+			++m_nSolved;
+		return;
+	}
+	bool btmEdge = y == m_nVert - 1;
+	int ny = y;			//	次のセル位置
+	int nx = x + 1;
+	bool rtEdge = nx == m_nHorz;		//	右端のセルか？
+	if( rtEdge ) {
+		++ny;
+		nx = 0;
+	}
+	bool up = y != 0 && (m_link[ix-m_nHorz] & LINK_DOWN) != 0;	//	上からリンクが来ている
+	bool left = x != 0 && (m_link[ix-1] & LINK_RIGHT) != 0;		//	左からリンクが来ている
+	if( m_number[ix] != 0 ) {	//	セルに数字がある場合
+		if( up && left ) return;		//	上・左両方からの接続不可
+		if( up ) {		//	上と接続
+			m_link[ix] = LINK_UP;
+			//cout << text2() << "\n";
+			if( checkLink(ix) )
+				isUniqBT(ix+1, nx, ny);
+			 m_link[ix] = 0;
+			return;
+		}
+		if( left ) {	//	左と接続
+			m_link[ix] = LINK_LEFT;
+			//cout << text2() << "\n";
+			if (checkLink(ix))
+				isUniqBT(ix+1, nx, ny);
+			 m_link[ix] = 0;
+			return;
+		}
+		//	上左に接続できない場合
+		if( !rtEdge ) {
+			m_link[ix] = LINK_RIGHT;	//	右に接続して探索
+			isUniqBT(ix+1, nx, ny);
+			if( m_nSolved >= 2 )		//	複数の解を見つけた場合
+				return;
+		}
+		if( !btmEdge ) {
+			m_link[ix] = LINK_DOWN;	//	下に接続して探索
+			isUniqBT(ix+1, nx, ny);
+			m_link[ix] = 0;
+		}
+		return;
+	} else {	//	セルに数字がない場合
+		if( up && left ) {	//	上・左両方から接続されている場合
+			m_link[ix] = LINK_UP | LINK_LEFT;
+			if( m_number[ix-1] != 0 ) {	//	左に数字がある場合
+				//cout << text2() << "\n";
+				if( !checkLink(ix-1) ) {
+					m_link[ix] = 0;
+					return;
+				}
+			} else {
+				if( m_number[ix-m_nHorz] != 0 ) {	//	上に数字がある場合
+					//cout << text2() << "\n";
+					if( !checkLink(ix-m_nHorz) ) {
+						m_link[ix] = 0;
+						return;
+					}
+				} else {
+					//cout << text2() << "\n";
+					int up = findNumber(ix-m_nHorz, LINK_DOWN);		//	上方向数字
+					if( up != 0 ) {
+						int left = findNumber(ix-1, LINK_RIGHT);	//	左方向数字
+						if (left != 0 && up != left) {
+							//cout << "NG\n";
+							m_link[ix] = 0;
+							return;
+						}
+					}
+				}
+			}
+			isUniqBT(ix+1, nx, ny);
+			 m_link[ix] = 0;
+			return;
+		}
+		if( up ) {		//	上からのみ接続されている場合
+			if( !rtEdge ) {
+				m_link[ix] = LINK_UP | LINK_RIGHT;		//	上と右に接続して探索
+				isUniqBT(ix+1, nx, ny);
+				if( m_nSolved >= 2 )
+					return;
+			}
+			if( !btmEdge ) {
+				m_link[ix] = LINK_UP | LINK_DOWN;		//	上と下に接続して探索
+				isUniqBT(ix+1, nx, ny);
+			}
+			m_link[ix] = 0;
+			return;
+		}
+		if( left ) {		//	左からのみ接続されている場合
+			if( !rtEdge ) {
+				m_link[ix] = LINK_LEFT | LINK_RIGHT;		//	左と右に接続して探索
+				isUniqBT(ix+1, nx, ny);
+				if( m_nSolved >= 2 )
+					return;
+				m_link[ix] = 0;
+			}
+			if( !btmEdge ) {
+				m_link[ix] = LINK_LEFT | LINK_DOWN;		//	左と下に接続して探索
+				isUniqBT(ix+1, nx, ny);
+			}
+			m_link[ix] = 0;
+			return;
+		}
+		if( rtEdge || btmEdge ) return;		//	右端or下端であれば接続不可
+		m_link[ix] = LINK_DOWN | LINK_RIGHT;		//	右と下に接続して探索
+		isUniqBT(ix+1, nx, ny);
+		m_link[ix] = 0;
+		return;
+	}
+}
 bool Board::doSolveBT()
 {
 	m_work.resize(m_number.size());
@@ -209,7 +346,7 @@ bool Board::doSolveBT(int ix, int x, int y)		//	ix の状態を決める
 	//cout << text2() << "\n";
 	if( ix == m_link.size() ) {
 		//	undone: 数字の入っていないセルに数字を入れてチェック？
-		cout << text2() << "\n";
+		//cout << text2() << "\n";
 		return checkLink();
 	}
 	bool btmEdge = y == m_nVert - 1;
@@ -226,37 +363,37 @@ bool Board::doSolveBT(int ix, int x, int y)		//	ix の状態を決める
 		if( up && left ) return false;		//	上・左両方からの接続不可
 		if( up ) {		//	上と接続
 			m_link[ix] = LINK_UP;
-			cout << text2() << "\n";
+			//cout << text2() << "\n";
 			if( !checkLink(ix) ) return false;
 			auto rc = doSolveBT(ix+1, nx, ny);
-			m_link[ix] = 0;
+			if( !rc ) m_link[ix] = 0;
 			return rc;
 		}
 		if( left ) {	//	左と接続
 			m_link[ix] = LINK_LEFT;
-			cout << text2() << "\n";
+			//cout << text2() << "\n";
 			if (!checkLink(ix)) {
-				cout << "NG\n";
+				//cout << "NG\n";
 				m_link[ix] = 0;
 				return false;
 			}
-			cout << "OK\n";
+			//cout << "OK\n";
 			auto rc = doSolveBT(ix+1, nx, ny);
-			m_link[ix] = 0;
+			if( !rc ) m_link[ix] = 0;
 			return rc;
 		}
 		//	上左に接続できない場合
 		if( !rtEdge ) {
 			m_link[ix] = LINK_RIGHT;	//	右に接続して探索
 			if( doSolveBT(ix+1, nx, ny) ) {
-				m_link[ix] = 0;
+				//m_link[ix] = 0;
 				return true;	//	解を発見した場合
 			}
 		}
 		if( !btmEdge ) {
 			m_link[ix] = LINK_DOWN;	//	下に接続して探索
 			auto rc = doSolveBT(ix+1, nx, ny);
-			m_link[ix] = 0;
+			if( !rc ) m_link[ix] = 0;
 			return rc;
 		}
 		return false;
@@ -264,25 +401,25 @@ bool Board::doSolveBT(int ix, int x, int y)		//	ix の状態を決める
 		if( up && left ) {	//	上・左両方から接続されている場合
 			m_link[ix] = LINK_UP | LINK_LEFT;
 			if( m_number[ix-1] != 0 ) {	//	左に数字がある場合
-				cout << text2() << "\n";
+				//cout << text2() << "\n";
 				if( !checkLink(ix-1) ) {
 					m_link[ix] = 0;
 					return false;
 				}
 			} else {
 				if( m_number[ix-m_nHorz] != 0 ) {	//	上に数字がある場合
-					cout << text2() << "\n";
+					//cout << text2() << "\n";
 					if( !checkLink(ix-m_nHorz) ) {
 						m_link[ix] = 0;
 						return false;
 					}
 				} else {
-					cout << text2() << "\n";
+					//cout << text2() << "\n";
 					int up = findNumber(ix-m_nHorz, LINK_DOWN);		//	上方向数字
 					if( up != 0 ) {
 						int left = findNumber(ix-1, LINK_RIGHT);	//	左方向数字
 						if (left != 0 && up != left) {
-							cout << "NG\n";
+							//cout << "NG\n";
 							m_link[ix] = 0;
 							return false;
 						}
@@ -290,7 +427,7 @@ bool Board::doSolveBT(int ix, int x, int y)		//	ix の状態を決める
 				}
 			}
 			auto rc = doSolveBT(ix+1, nx, ny);
-			m_link[ix] = 0;
+			if( !rc ) m_link[ix] = 0;
 			return rc;
 		}
 		if( up ) {		//	上からのみ接続されている場合
@@ -303,14 +440,14 @@ bool Board::doSolveBT(int ix, int x, int y)		//	ix の状態を決める
 				}
 #endif
 				if( doSolveBT(ix+1, nx, ny) ) {
-					m_link[ix] = 0;
+					//m_link[ix] = 0;
 					return true;
 				}
 			}
 			if( !btmEdge ) {
 				m_link[ix] = LINK_UP | LINK_DOWN;		//	上と下に接続して探索
 				auto rc = doSolveBT(ix+1, nx, ny);
-				m_link[ix] = 0;
+				if( !rc ) m_link[ix] = 0;
 				return rc;
 			}
 			m_link[ix] = 0;
@@ -326,14 +463,14 @@ bool Board::doSolveBT(int ix, int x, int y)		//	ix の状態を決める
 				}
 #endif
 				if( doSolveBT(ix+1, nx, ny) ) {
-					m_link[ix] = 0;
+					//m_link[ix] = 0;
 					return true;
 				}
 			}
 			if( !btmEdge ) {
 				m_link[ix] = LINK_LEFT | LINK_DOWN;		//	左と下に接続して探索
 				auto rc = doSolveBT(ix+1, nx, ny);
-				m_link[ix] = 0;
+				if( !rc ) m_link[ix] = 0;
 				return rc;
 			}
 			m_link[ix] = 0;
@@ -342,7 +479,7 @@ bool Board::doSolveBT(int ix, int x, int y)		//	ix の状態を決める
 		if( rtEdge || btmEdge ) return false;		//	右端or下端であれば接続不可
 		m_link[ix] = LINK_DOWN | LINK_RIGHT;		//	右と下に接続して探索
 		auto rc = doSolveBT(ix+1, nx, ny);
-		m_link[ix] = 0;
+		if( !rc ) m_link[ix] = 0;
 		return rc;
 	}
 }
@@ -402,16 +539,18 @@ bool Board::checkLink()		//	出来上がったリンクが正しいかどうか�
 				case LINK_LEFT:		dir = LINK_RIGHT;	ix -= 1;	break;
 				case LINK_RIGHT:	dir = LINK_LEFT;	ix += 1;	break;
 				}
-				if( ix == ix0 ) return false;	//	ループしている場合
+				if( ix == ix0 )
+					return false;	//	ループしている場合
 				m_work[ix] = num;
 			} while (m_number[ix]==0);		//	数字セルに到達するまでループ
 			if( m_number[ix] != num )		//	異なる数字とリンクしている場合はNG
 				return false;
 		}
 	}
-	for(auto x : m_work ) {		//	すべてのセルの数字が決まっているかチェック	← 必要？
-		if( x == 0 ) return false;
-	}
+	//for(auto x : m_work ) {		//	すべてのセルの数字が決まっているかチェック	← 必要？
+	//	if( x == 0 )
+	//		return false;
+	//}
 	return true;	//	問題なし
 } 
 bool Board::doSolve()		//	ブルートフォースで解を探索。発見したら即リターン

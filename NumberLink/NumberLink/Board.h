@@ -61,6 +61,8 @@ public:
 	int		findNumber(int ix, uchar dir);
 	bool	isUniq();							//	解がユニーク？
 	void	isUniq(int ix, int x, int y);		//	ix の状態を決める
+	bool	isUniqBT();							//	バックトラッキング探索で解がユニークかどうかを調べる
+	void	isUniqBT(int ix, int x, int y);		//	ix の状態を決める
 	void	setRandom(int N);
 	void	genRandom(int N);
 	void	genLinked(int N);		//	リンクされたN種数字を生成
