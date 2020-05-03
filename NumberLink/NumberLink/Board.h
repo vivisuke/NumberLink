@@ -42,7 +42,7 @@ public:
 	std::string	text2() const;
 	std::string	text3() const;
 	std::string	textLink2() const;
-	bool	isConsecutive() const;		//	問題に数字が連続して並んでいるか？
+	bool	isConsecutive() const;		//	問題に同じ数字が連続して並んでいるか？
 	bool	doesIncludeMeaninglessLink() const;			//	コの字型のパスを含むか？
 public:
 	void	setSize(int h, int v = 0);
@@ -63,6 +63,7 @@ public:
 	void	isUniq(int ix, int x, int y);		//	ix の状態を決める
 	bool	isUniqBT();							//	バックトラッキング探索で解がユニークかどうかを調べる
 	void	isUniqBT(int ix, int x, int y);		//	ix の状態を決める
+	void	setRandomSymmetrical(int N);
 	void	setRandom(int N);
 	void	genRandom(int N);
 	void	genLinked(int N);		//	リンクされたN種数字を生成

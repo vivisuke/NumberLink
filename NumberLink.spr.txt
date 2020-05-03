@@ -7,10 +7,18 @@
 ◎ C 04/26 04/26 0.001 問題 doSolveBT()：異なる数字をリンクしている
 ◎ C 04/26 04/26 0.001 問題 doSolveBT()：計算中にリンクのビットが３つ立つことがある
 ● C 04/26             問題 checkLink()：解が求まっているのに false を返す場合がある
-● C 04/26             ToDo 
-● C 04/26             ToDo 
-● C 04/26             ToDo 
-● C 04/26             ToDo 
-● C 04/26             ToDo 
-● C 04/26             ToDo 
-● C 04/26             ToDo 
+● C 04/26             ToDo （上下左右）対称形問題生成
+● C 04/26             ToDo 8x8、数字6～10の場合の適切問題割合計算
+● C 04/26             ToDo （斜め）対称形問題生成
+● C 04/29             問題 BoardK::text()：10以上の数字（A～）に対応していない
+● C 05/04             ToDo BoardK::doSolveBT()：バックトラッキングで問題を解く
+● C 05/04             ToDo 
+● C 05/04             ToDo 
+● C 05/04             ToDo 
+● C 05/04             ToDo 
+● C 05/04             ToDo 
+● C 05/04             ToDo 
+● C 05/04             ToDo 
+● C 05/04             ToDo 
+● C 05/04             ToDo 
+● C 05/04             ToDo 

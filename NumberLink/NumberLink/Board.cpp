@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <random>
+#include <algorithm>
 #include <ctype.h>
 #include <assert.h>
 #include "Board.h"
@@ -872,7 +873,7 @@ void Board::isUniq(int ix, int x, int y)		//	ix の状態を決める
 	}
 }
 #endif
-bool Board::isConsecutive() const		//	問題に数字が連続して並んでいるか？
+bool Board::isConsecutive() const		//	問題に同じ数字が連続して並んでいるか？
 {
 	int ix = 0;
 	for (int y = 0; y < m_nVert; ++y) {
@@ -923,6 +924,35 @@ bool Board::doesIncludeMeaninglessLink() const			//	コの字型のパスを含�
 		}
 	}
 	return false;
+}
+//	上下左右対称に数字をランダム配置
+void Board::setRandomSymmetrical(int N)		//	N: 数字の種類数
+{
+	for (;;) {
+		for(auto &x : m_number) x = 0;
+		vector<int> lst;	//	数字を入れる場所リスト
+		int n = 0;			//	入れた数字の数
+		while( n < N ) {
+			int x = g_mt() % (m_nHorz / 2);
+			int y = g_mt() % (m_nVert / 2);
+			lst.push_back(x + y * m_nHorz);
+			lst.push_back((m_nHorz - x - 1) + y * m_nHorz);
+			lst.push_back(x + (m_nVert - y - 1) * m_nHorz);
+			lst.push_back((m_nHorz - x - 1) + (m_nVert - y - 1) * m_nHorz);
+			n += 2;
+		}
+		vector<int> nums;		//	数字リスト
+		for (int i = 1; i <= n; ++i) {
+			nums.push_back(i);
+			nums.push_back(i);
+		}
+		std::shuffle(nums.begin(), nums.end(), g_mt);	//	数字リストをシャフル
+		assert( lst.size() == nums.size() );
+		for (int i = 0; i != lst.size(); ++i) {
+			m_number[lst[i]] = nums[i];
+		}
+		if (!isConsecutive()) return;
+	}
 }
 void Board::setRandom(int N)
 {
