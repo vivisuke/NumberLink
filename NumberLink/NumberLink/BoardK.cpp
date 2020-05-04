@@ -19,6 +19,8 @@ enum {
 extern random_device	g_rd;
 extern mt19937	g_mt;
 
+int	g_count = 0;
+
 
 string vucToText(const vector<uchar> &v)
 {
@@ -191,6 +193,10 @@ std::string BoardK::mate() const				//	mate 内容を表示
 			string t = to_string((int)m_mate[ix]);
 			while( t.size() < 4 ) t = " " + t;		//	４桁
 			txt += t;
+			if( !m_mate[ix] )
+				txt += "(0)";
+			else
+				txt += "(" + to_string((int)m_number[m_mate[ix]]) + ")";
 		}
 		txt += "\n";
 	}
@@ -655,6 +661,7 @@ void BoardK::setCornerLink(int ix, int dx, int dy)
 }
 bool BoardK::doSolveBT()			//	バックトラッキング探索
 {
+	g_count = 0;
 	for(auto &x : m_linkRt) x = 0;
 	for(auto &x : m_linkDn) x = 0;
 	for(auto &x : m_mate) x = 0;
@@ -662,6 +669,7 @@ bool BoardK::doSolveBT()			//	バックトラッキング探索
 }
 bool BoardK::doSolveBT(int ix)		//	ix の状態を決める
 {
+	cout << "#" << ++g_count << ": ix = " << ix << "\n";
 	cout << textnl() << "\n";
 	cout << mate() << "\n";
 	if( ix > xyToIndex(m_width, m_height) ) {		//	全てのセルを無事埋めた場合
@@ -677,29 +685,57 @@ bool BoardK::doSolveBT(int ix)		//	ix の状態を決める
 	if( m_number[ix] != 0 ) {	//	セルに数字がある場合
 		if( up || left )	//	上方向 or 左方向から既にリンク済みの場合
 			return doSolveBT(ix+1);
-		if( m_number[ix+1] == 0 || m_number[ix+1] == m_number[ix] ) {		//	右が空欄 or 同じ数字の場合
+		if( m_number[ix+1] == m_number[ix] ) {		//	右が同じ数字の場合
 			m_linkRt[ix] = true;
-			m_mate[ix+1] = ix;
-			m_mate[ix] = ix + 1;
 			if( doSolveBT(ix+1) )
 				return true;
 			m_linkRt[ix] = false;
-			//	数字がある場合は mate[] を元に戻す必要はない（はず）
-		}
-		if( m_number[ix+m_aryWidth] == 0 || m_number[ix+m_aryWidth] == m_number[ix] ) {		//	下が空欄 or 同じ数字の場合
+		} else if( m_number[ix+m_aryWidth] == m_number[ix] ) {		//	下が同じ数字の場合
 			m_linkDn[ix] = true;
-			m_mate[ix+m_aryWidth] = ix;
-			m_mate[ix] = ix + m_aryWidth;
 			if( doSolveBT(ix+1) )
 				return true;
 			m_linkDn[ix] = false;
-			m_mate[ix+m_aryWidth] = 0;
+		} else {
+			auto num = m_number[ix];
+			if( m_number[ix+1] == 0 ) {		//	右が空欄の場合
+				if( m_mate[ix+1] == 0 ) {	//	右が既にどこかとリンクしていない場合
+					m_linkRt[ix] = true;
+					m_mate[ix+1] = ix;
+					m_mate[ix] = ix + 1;
+					if( doSolveBT(ix+1) )
+						return true;
+					m_linkRt[ix] = false;
+					m_mate[ix+1] = m_mate[ix] = 0;
+				} else if( m_number[m_mate[ix+1]] == 0 || m_number[m_mate[ix+1]] == num ) {
+					m_linkRt[ix] = true;
+					m_mate[m_mate[ix+1]] = ix;
+					m_mate[ix] = m_mate[ix+1];
+					if( doSolveBT(ix+1) )
+						return true;
+					m_linkRt[ix] = false;
+					m_mate[m_mate[ix+1]] = ix + 1;
+					m_mate[ix] = 0;
+				}
+			}
+			if( m_number[ix+m_aryWidth] == 0 ) {		//	下が空欄の場合
+				//	m_mate[ix + m_aryWidth] は必ず０のはず
+				//if( m_mate[ix+m_aryWidth] == 0 ) {
+					m_linkDn[ix] = true;
+					m_mate[ix+m_aryWidth] = ix;
+					m_mate[ix] = ix + m_aryWidth;
+					if( doSolveBT(ix+1) )
+						return true;
+					m_linkDn[ix] = false;
+					m_mate[ix+m_aryWidth] = m_mate[ix] = 0;
+				//}
+			}
 		}
 		return false;
 	} else {	//	セルに数字が無い場合
 		int num = m_mate[ix] == 0 ? 0 : m_number[m_mate[ix]];	//	当該セルが端点の場合、逆端点数字
 		if( up && left ) {		//	上・左両方からリンクが来ている
 			//	既に┘が入り、チェック済みのはず
+			return doSolveBT(ix+1);
 		} else if( up ) {		//	上からリンクが来ている → 必ず端点になっている、└ or │を入れる
 			if( !rtEdge ) {		//	右端でない場合
 				if( m_number[ix+1] != 0 ) {			//	右に数字がある場合
@@ -718,8 +754,10 @@ bool BoardK::doSolveBT(int ix)		//	ix の状態を決める
 					m_mate[m_mate[ix]] = ix + 1;
 					if( doSolveBT(ix+1) )
 						return true;
+					m_mate[ix + 1] = 0;
 					m_mate[m_mate[ix]] = ix;
 				} else if( m_number[m_mate[ix+1]] == num ) {		//	右が端点で、同じ数字の場合
+					if( !num ) return false;		//	空ループの場合
 					m_linkRt[ix] = true;		//	右にリンク
 					//	ソルバーとしては mate[] を更新する必要はない（はず）
 					if( doSolveBT(ix+1) )
@@ -729,14 +767,14 @@ bool BoardK::doSolveBT(int ix)		//	ix の状態を決める
 			}
 			if( !btmEdge ) {	//	下端でない場合
 				if( m_number[ix+m_aryWidth] != 0 ) {			//	下に数字がある場合
-					if( m_number[ix+m_aryWidth] == num ) {
+					if( !num || m_number[ix+m_aryWidth] == num ) {	//	リンク末端に数字が無いか数字が一致している場合
 						m_linkDn[ix] = true;		//	下にリンク
-						m_mate[m_mate[ix]] = ix + 1;
-						m_mate[ix+1] = m_mate[ix];
+						m_mate[m_mate[ix]] = ix + m_aryWidth;
+						m_mate[ix+ m_aryWidth] = m_mate[ix];
 						if( doSolveBT(ix+1) )
 							return true;
 						m_mate[m_mate[ix]] = ix;
-						m_mate[ix+1] = 0;
+						m_mate[ix+ m_aryWidth] = 0;
 					}
 				} else {
 					m_linkDn[ix] = true;		//	下にリンク
@@ -744,19 +782,24 @@ bool BoardK::doSolveBT(int ix)		//	ix の状態を決める
 					m_mate[m_mate[ix]] = ix + m_aryWidth;
 					if( doSolveBT(ix+1) )
 						return true;
-					m_linkDn[ix] = false;		//	リンク削除
+					m_mate[ix + m_aryWidth] = 0;
 					m_mate[m_mate[ix]] = ix;
 				}
+				m_linkDn[ix] = false;		//	リンク削除
 			}
 			return false;
 		} else if( left ) {		//	左からリンクが来ている
 			if( !rtEdge ) {		//	右端でない場合
 				if( m_number[ix+1] != 0 ) {			//	右に数字がある場合
-					if( !num || m_number[ix+1] == num ) {	//	右に数字あり、左側の端点数字と一致する場合
+					if( !m_mate[ix+1] && (!num || (m_mate[ix] != ix + 1 && m_number[ix+1] == num)) )
+					{	//	既にリンクが無く、右に数字あり、左側の端点数字と一致する場合
 						m_linkRt[ix] = true;		//	右にリンク
-						
+						m_mate[m_mate[ix]] = ix + 1;
+						m_mate[ix+1] = m_mate[ix];
 						if( doSolveBT(ix+1) )
 							return true;
+						m_mate[m_mate[ix]] = ix;
+						m_mate[ix+1] = 0;
 					}
 				} else if( m_mate[ix+1] == 0 ) {		//	右が端点でない場合
 					m_linkRt[ix] = true;		//	右にリンク
@@ -767,6 +810,7 @@ bool BoardK::doSolveBT(int ix)		//	ix の状態を決める
 					m_mate[ix+1] = 0;				//	右側の端点の mate[] を元に戻す
 					m_mate[m_mate[ix]] = ix;		//	左側の端点の mate[] を元に戻す
 				} else if( m_number[m_mate[ix+1]] == num ) {		//	右が端点で、同じ数字の場合
+					if (!num) return false;		//	空ループの場合
 					m_linkRt[ix] = true;		//	右にリンク
 					//	ソルバーとしては mate[] を更新する必要はない（はず）
 					if( doSolveBT(ix+1) )
@@ -775,24 +819,43 @@ bool BoardK::doSolveBT(int ix)		//	ix の状態を決める
 				m_linkRt[ix] = false;		//	右リンク削除
 			}
 			if( !btmEdge ) {		//	下端でない場合
-				m_linkDn[ix] = true;		//	下にリンク
-				m_mate[m_mate[ix]] = ix + m_aryWidth;		//	左側の端点の mate[] 更新
-				m_mate[ix+m_aryWidth] = m_mate[ix];			//	下側の端点の mate[] 更新
-				if( doSolveBT(ix+1) )
-					return true;
-				m_mate[m_mate[ix]] = ix;		//	左側の端点の mate[] を元に戻す
-				m_mate[ix+m_aryWidth] = 0;
-				m_linkDn[ix] = false;		//	右にリンク
+				if( m_number[ix+m_aryWidth] != 0 ) {			//	下に数字がある場合
+					if( !num || m_number[ix+m_aryWidth] == num ) {	//	リンク末端に数字が無いか数字が一致している場合
+						m_linkDn[ix] = true;		//	下にリンク
+						m_mate[m_mate[ix]] = ix + m_aryWidth;
+						m_mate[ix+ m_aryWidth] = m_mate[ix];
+						if( doSolveBT(ix+1) )
+							return true;
+						m_mate[m_mate[ix]] = ix;
+						m_mate[ix+ m_aryWidth] = 0;
+					}
+				} else {
+					m_linkDn[ix] = true;		//	下にリンク
+					m_mate[m_mate[ix]] = ix + m_aryWidth;		//	左側の端点の mate[] 更新
+					m_mate[ix+m_aryWidth] = m_mate[ix];			//	下側の端点の mate[] 更新
+					if( doSolveBT(ix+1) )
+						return true;
+					m_mate[m_mate[ix]] = ix;		//	左側の端点の mate[] を元に戻す
+					m_mate[ix+m_aryWidth] = 0;
+				}
+				m_linkDn[ix] = false;		//	リンク削除
 			}
 		} else {		//	上・左両方ともリンクが来ていない
 			if( rtEdge || btmEdge ) return false;	//	右端 or 下端の場合はリンク不可
-			m_linkRt[ix] = m_linkDn[ix] = true;		//	右・下にリンク
-			m_mate[ix+1] = ix + m_aryWidth;			//	ix の右・下が結合された端点である情報保持
-			m_mate[ix+m_aryWidth] = ix + 1;
-			if( doSolveBT(ix+1) )
-				return true;
-			m_mate[ix+1] = m_mate[ix+m_aryWidth] = 0;
-			m_linkRt[ix] = m_linkDn[ix] = false;		//	右・下リンク削除
+			if( m_number[ix+1] != 0 && m_mate[ix+1] ) return false;	//	右に連結済み数字がある
+			if( m_number[ix+m_aryWidth] == 0 ||		//	下に数字が無い
+				m_number[ix+1] == m_number[ix+m_aryWidth] ||	//	右と下の数字が同一
+				m_mate[ix+1] == 0 ||							//	右がリンク末端ではない
+				m_number[m_mate[ix+1]] == m_number[ix+m_aryWidth] )		//	右のリンクの数字が下の数字と等しい
+			{
+				m_linkRt[ix] = m_linkDn[ix] = true;		//	右・下にリンク
+				m_mate[ix+1] = ix + m_aryWidth;			//	ix の右・下が結合された端点である情報保持
+				m_mate[ix+m_aryWidth] = ix + 1;
+				if( doSolveBT(ix+1) )
+					return true;
+				m_mate[ix+1] = m_mate[ix+m_aryWidth] = 0;
+				m_linkRt[ix] = m_linkDn[ix] = false;		//	右・下リンク削除
+			}
 		}
 	}
 	return false;

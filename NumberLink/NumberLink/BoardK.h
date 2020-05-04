@@ -19,10 +19,10 @@ public:
 	BoardK(int width = 4, int height = 4);
 public:
 	int		xyToIndex(int x, int y) const {		//	x: [1, width], y: [1, height]
-		return y * m_aryWidth + x;
+		return y * m_aryWidth + x - 1;
 	}
 	int		indexToX(int ix) const {
-		return ix % m_aryWidth;
+		return ix % m_aryWidth + 1;
 	}
 	int		indexToY(int ix) const {
 		return ix / m_aryWidth;

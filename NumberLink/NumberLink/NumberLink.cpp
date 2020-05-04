@@ -417,8 +417,12 @@ void test_BoardK()
 	BoardK bd(4, 4);
 	bd.setNumbers("1231.....23.....");
 #endif
+#if	1
 	BoardK bd(5, 5);
-	bd.setNumbers("...14.2.....3..1.42.3....");
+	//bd.setNumbers("1...3..2.....3....1.2....");
+	bd.setNumbers("............3.1.2..2.1..3");
+	//bd.setNumbers("...14.2.....3..1.42.3....");
+#endif
 #if	0
 	BoardK bd(7, 7);
 	bd.setNumbers("....321""....1.."".......""..2....""......."".35..4.""4.....5");		//	7x7
